@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공부 타이머 🎵</title>
+  <style>
+    :root {
+      --bg: #f9f9f7;
+      --card: #ffffff;
+      --border: #e5e5e2;
+      --text: #1a1a1a;
+      --text-sub: #6b6b6b;
+      --text-mute: #9b9b9b;
+      --accent: #7F77DD;
+      --success: #27a862;
+      --danger: #e5534b;
+      --tag-bg: #f1f0f0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a; --card: #242424; --border: #333;
+        --text: #f0f0f0; --text-sub: #aaa; --text-mute: #666; --tag-bg: #2e2e2e;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; min-height: 100vh; padding: 1.5rem 1rem 4rem; }
+    .wrap { max-width: 480px; margin: 0 auto; }
+    .date-label { font-size: 12px; color: var(--text-mute); text-align: center; margin-bottom: 1.5rem; }
+    .mystery { font-size: 13px; color: var(--text-mute); text-align: center; margin-bottom: 1rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; min-height: 110px; display: flex; flex-direction: column; justify-content: center; }
+    .card-hidden { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 80px; }
+    .card-hidden span { font-size: 14px; color: var(--text-mute); }
+    .tag { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 20px; margin-right: 5px; margin-bottom: 6px; background: var(--tag-bg); color: var(--text-sub); }
+    .music-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .music-desc { font-size: 12px; color: var(--text-sub); margin-bottom: 0.75rem; }
+    .music-link { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 12px; text-decoration: none; }
+    .music-link:hover { background: var(--tag-bg); }
+    .timer-display { font-size: 58px; font-weight: 600; color: var(--text); text-align: center; margin: 0.75rem 0 1.25rem; font-variant-numeric: tabular-nums; letter-spacing: -1px; transition: color 0.3s; }
+    .timer-display.running { color: var(--success); }
+    .btn-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 0.75rem; }
+    .btn-start { display: inline-flex; align-items: center; gap: 8px; padding: 13px 32px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 16px; cursor: pointer; font-weight: 600; }
+    .btn-start:hover { background: var(--tag-bg); }
+    .btn-stop { display: inline-flex; align-items: center; gap: 8px; padding: 13px 32px; border-radius: 12px; border: 1px solid var(--danger); background: transparent; color: var(--danger); font-size: 16px; cursor: pointer; font-weight: 600; }
+    .btn-small { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-mute); font-size: 12px; cursor: pointer; }
+    .btn-small:hover { background: var(--tag-bg); }
+    .center { text-align: center; }
+    .section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 12px; color: var(--text-mute); margin-bottom: 0.75rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+    .session-item { padding: 8px 10px; background: var(--bg); border-radius: 8px; margin-bottom: 5px; font-size: 13px; }
+    .session-row { display: flex; justify-content: space-between; align-items: center; }
+    .session-time-range { font-size: 11px; color: var(--text-mute); margin-top: 2px; }
+    .session-music { font-size: 11px; color: var(--text-mute); margin-top: 1px; }
+    .total-row { display: flex; justify-content: space-between; padding: 8px 10px; border-top: 1px solid var(--border); margin-top: 6px; font-size: 13px; font-weight: 600; }
+    .memo-area { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--text); background: var(--bg); resize: none; height: 64px; font-family: inherit; margin-bottom: 8px; }
+    .memo-area:focus { outline: none; border-color: var(--accent); }
+    .saved-memo { font-size: 13px; color: var(--text-sub); padding: 8px 10px; background: var(--bg); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .chart-wrap { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 0.5rem; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; }
+    .bar-label { font-size: 11px; color: var(--text-mute); }
+    .bar-val { font-size: 10px; color: var(--text-mute); }
+    .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .input-row input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--text); background: var(--bg); font-family: inherit; }
+    .input-row input:focus { outline: none; border-color: var(--accent); }
+    .custom-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg); border-radius: 8px; margin-bottom: 5px; }
+    .custom-item-title { flex: 1; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-item-del { color: var(--text-mute); cursor: pointer; background: none; border: none; font-size: 16px; padding: 0 2px; }
+    .custom-item-del:hover { color: var(--danger); }
+    .empty-hint { font-size: 12px; color: var(--text-mute); padding: 4px 0; }
+    .count-badge { font-size: 11px; color: var(--text-mute); font-weight: normal; margin-left: 4px; text-transform: none; letter-spacing: 0; }
+    .comment-box { background: #EEEDFE; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #3C3489; margin-bottom: 0.75rem; line-height: 1.5; }
+    .weekly-memo-item { padding: 8px 10px; background: var(--bg); border-radius: 8px; margin-bottom: 5px; }
+    .weekly-memo-date { font-size: 11px; color: var(--text-mute); margin-bottom: 3px; }
+    .weekly-memo-text { font-size: 13px; color: var(--text); }
+    .sync-status { font-size: 11px; color: var(--text-mute); text-align: center; margin-bottom: 0.5rem; }
+    .tab-row { display: flex; gap: 6px; margin-bottom: 1rem; }
+    .tab-btn { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-mute); font-size: 13px; cursor: pointer; font-family: inherit; }
+    .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <p class="date-label" id="date-label"></p>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="showTab('timer')">⏱ 타이머</button>
+    <button class="tab-btn" onclick="showTab('weekly')">📅 주간 기록</button>
+  </div>
+
+  <!-- 타이머 탭 -->
+  <div id="tab-timer">
+    <p class="mystery">🔒 시작할 때마다 새로운 BGM 공개 + 자동 재생</p>
+    <p class="sync-status" id="sync-status"></p>
+
+    <div class="card">
+      <div class="card-hidden" id="hidden-state">
+        <span style="font-size:22px">🎵</span>
+        <span>시작 버튼을 누르면 공개!</span>
+      </div>
+      <div id="revealed-state" style="display:none">
+        <div id="tags"></div>
+        <p class="music-title" id="music-title"></p>
+        <p class="music-desc" id="music-desc"></p>
+        <a class="music-link" id="music-link" href="#" target="_blank">▶ 유튜브에서 다시 열기</a>
+      </div>
+    </div>
+
+    <div class="timer-display" id="timer">00:00:00</div>
+
+    <div class="btn-row">
+      <button class="btn-start" id="btn-start" onclick="startTimer()">▶ 시작</button>
+      <button class="btn-stop" id="btn-stop" onclick="stopTimer()" style="display:none">⏸ 정지</button>
+    </div>
+    <div class="center" style="margin-bottom:1rem">
+      <button class="btn-small" onclick="resetDay()">↺ 오늘 초기화</button>
+    </div>
+
+    <div id="comment-area"></div>
+
+    <div class="section" id="sessions-wrap" style="display:none">
+      <p class="section-title">오늘 집중 기록</p>
+      <div id="session-list"></div>
+      <div class="total-row"><span>총 집중 시간</span><strong id="total-time"></strong></div>
+    </div>
+
+    <div class="section" id="memo-section" style="display:none">
+      <p class="section-title">오늘 한줄평</p>
+      <div id="memo-view" style="display:none"></div>
+      <div id="memo-edit">
+        <textarea class="memo-area" id="memo-input" placeholder="오늘 집중은 어땠나요?"></textarea>
+        <button class="btn-small" onclick="saveMemo()">✓ 저장</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">이번 주 집중 추이 (분)</p>
+      <div class="chart-wrap" id="weekly-chart"></div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">내 취향 링크 추가 <span class="count-badge" id="custom-count"></span></p>
+      <div class="input-row">
+        <input type="text" id="custom-title" placeholder="이름 (예: 비 오는 카페)" />
+      </div>
+      <div class="input-row">
+        <input type="url" id="custom-url" placeholder="유튜브 링크 붙여넣기" />
+        <button class="btn-small" onclick="addCustom()">+ 추가</button>
+      </div>
+      <div id="custom-list"></div>
+    </div>
+  </div>
+
+  <!-- 주간 기록 탭 -->
+  <div id="tab-weekly" style="display:none">
+    <div class="section">
+      <p class="section-title">이번 주 한줄평 모아보기</p>
+      <div id="weekly-memo-list"></div>
+    </div>
+    <div class="section">
+      <p class="section-title">이번 주 집중 추이 (분)</p>
+      <div class="chart-wrap" id="weekly-chart2"></div>
+    </div>
+    <div class="section">
+      <p class="section-title">이번 주 전체 기록</p>
+      <div id="weekly-sessions-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var GAS_URL = "https://script.google.com/macros/s/AKfycbzzi9fm3AW8ffFL_6xaQrm5CkRA1Rg5xKQFJNUvl2hqgyB02Gc7TRQOJWplgeBT0jvf/exec";
+
+var BUILTIN = [
+  {title:"Lofi Hip Hop – 주혜 픽",desc:"직접 고른 lofi.",url:"https://www.youtube.com/watch?v=sLB-sCSxiqc",tags:["lofi","주혜픽"]},
+  {title:"Chill Study Beats – 주혜 픽",desc:"직접 고른 공부 비트.",url:"https://www.youtube.com/watch?v=_REB6A4q4FY",tags:["chill","주혜픽"]},
+  {title:"Study Music – 주혜 픽",desc:"직접 고른 스터디 뮤직.",url:"https://www.youtube.com/watch?v=H0gmXzz4aPA",tags:["lofi","주혜픽"]},
+  {title:"Focus Playlist – 주혜 픽",desc:"직접 고른 집중 플레이리스트.",url:"https://www.youtube.com/watch?v=T40adOYn_To",tags:["집중","주혜픽"]},
+  {title:"Chill Vibes – 주혜 픽",desc:"직접 고른 칠 바이브.",url:"https://www.youtube.com/watch?v=epRy8kV3ui8",tags:["chill","주혜픽"]},
+  {title:"Lofi Cafe – 주혜 픽",desc:"직접 고른 lofi 카페.",url:"https://www.youtube.com/watch?v=MIlilq4WYi4",tags:["카페","주혜픽"]},
+  {title:"Study Ambience – 주혜 픽",desc:"직접 고른 공부 앰비언스.",url:"https://www.youtube.com/watch?v=LLV0uJHKHAI",tags:["ambient","주혜픽"]},
+  {title:"Lofi Girl – beats to relax/study to",desc:"24시간 라이브 lofi.",url:"https://www.youtube.com/watch?v=jfKfPfyJRdk",tags:["lofi","라이브"]},
+  {title:"Lofi Girl – sleep radio",desc:"수면용 lofi. 잔잔하게 오래 틀기 좋아요.",url:"https://www.youtube.com/watch?v=rUxyKA_-grg",tags:["lofi","잔잔함"]},
+  {title:"Best of lofi 2024",desc:"2024년 lofi 베스트.",url:"https://www.youtube.com/watch?v=lA9FONoiuFA",tags:["lofi","2024"]},
+  {title:"1 A.M Study Session",desc:"새벽 분위기 lofi.",url:"https://www.youtube.com/watch?v=lTRiuFIWV54",tags:["lofi","새벽"]},
+  {title:"Chillhop Radio",desc:"재즈 느낌 lofi.",url:"https://www.youtube.com/watch?v=7NOSDKb0HlU",tags:["chillhop","재즈"]},
+  {title:"Rain and Thunder 8시간",desc:"빗소리+천둥. 고요함이 불편할 때.",url:"https://www.youtube.com/watch?v=yIQd2Ya0Ziw",tags:["빗소리","자연음"]},
+  {title:"Forest Rain 8시간",desc:"숲속 빗소리.",url:"https://www.youtube.com/watch?v=xNN7iTA57jM",tags:["빗소리","자연음"]},
+  {title:"City Rain Ambience",desc:"도시 빗소리.",url:"https://www.youtube.com/watch?v=BOb3l_UhV0I",tags:["빗소리","도시"]},
+  {title:"Rainy Cafe Ambience",desc:"비 오는 날 카페.",url:"https://www.youtube.com/watch?v=3sL0omwElxw",tags:["빗소리","카페"]},
+  {title:"Brown Noise – ADHD Focus",desc:"갈색소음. ADHD 집중에 좋아요.",url:"https://www.youtube.com/watch?v=RqzGzwTY-6w",tags:["갈색소음","ADHD"]},
+  {title:"White Noise 8시간",desc:"백색소음. 외부 소리 차단.",url:"https://www.youtube.com/watch?v=nMfPqeZjc2c",tags:["백색소음","차단"]},
+  {title:"Pink Noise – Deep Focus",desc:"핑크노이즈. 백색소음보다 부드러워요.",url:"https://www.youtube.com/watch?v=ZXtimhT-ff4",tags:["핑크노이즈","집중"]},
+  {title:"Ocean Waves 8시간",desc:"파도 소리.",url:"https://www.youtube.com/watch?v=bn9F19Hi1Lk",tags:["자연음","잔잔함"]},
+  {title:"Coffee Shop Ambience",desc:"카페 소음.",url:"https://www.youtube.com/watch?v=h2zkV-l_more",tags:["카페소음","ambient"]},
+  {title:"Studio Ghibli Piano",desc:"지브리 피아노.",url:"https://www.youtube.com/watch?v=o7dCGGzMFM8",tags:["지브리","피아노"]},
+  {title:"Deep Focus Binaural Beats",desc:"바이노럴 비트.",url:"https://www.youtube.com/watch?v=WPni755-Krg",tags:["binaural","집중"]},
+  {title:"Classical Piano Study",desc:"클래식 피아노.",url:"https://www.youtube.com/watch?v=jgpJVI3tDbY",tags:["클래식","피아노"]},
+  {title:"Video Game Music Study Mix",desc:"게임 OST.",url:"https://www.youtube.com/watch?v=HcCr2C0wC1E",tags:["게임OST","집중"]},
+  {title:"Jazz Cafe Music",desc:"재즈 카페.",url:"https://www.youtube.com/watch?v=Dx5qFachd3A",tags:["재즈","카페"]},
+  {title:"K-POP Study Playlist",desc:"케이팝 플리.",url:"https://www.youtube.com/watch?v=9bZkp7q19f0",tags:["K-POP","가사있음"]},
+  {title:"Anime OST Study Mix",desc:"애니 OST.",url:"https://www.youtube.com/watch?v=Hm1fKAKkFhM",tags:["애니OST","집중"]},
+  {title:"Nature Sounds",desc:"새소리, 물소리.",url:"https://www.youtube.com/watch?v=eKFTSSKCzWA",tags:["자연음","잔잔함"]},
+  {title:"Indie Pop Study Playlist",desc:"인디팝.",url:"https://www.youtube.com/watch?v=36YnV9STBqc",tags:["인디팝","가사있음"]},
+];
+
+var tagColors = {
+  "주혜픽":{bg:"#EEEDFE",color:"#3C3489"},"lofi":{bg:"#E1F5EE",color:"#085041"},
+  "chill":{bg:"#EEEDFE",color:"#3C3489"},"집중":{bg:"#EAF3DE",color:"#27500A"},
+  "카페":{bg:"#FAEEDA",color:"#633806"},"ambient":{bg:"#F1EFE8",color:"#444441"},
+  "라이브":{bg:"#E6F1FB",color:"#0C447C"},"잔잔함":{bg:"#E1F5EE",color:"#085041"},
+  "2024":{bg:"#EAF3DE",color:"#27500A"},"새벽":{bg:"#EEEDFE",color:"#3C3489"},
+  "chillhop":{bg:"#EEEDFE",color:"#3C3489"},"재즈":{bg:"#FAEEDA",color:"#633806"},
+  "빗소리":{bg:"#E6F1FB",color:"#0C447C"},"자연음":{bg:"#EAF3DE",color:"#27500A"},
+  "도시":{bg:"#F1EFE8",color:"#444441"},"갈색소음":{bg:"#FAECE7",color:"#712B13"},
+  "ADHD":{bg:"#EEEDFE",color:"#3C3489"},"백색소음":{bg:"#F1EFE8",color:"#444441"},
+  "차단":{bg:"#FAECE7",color:"#712B13"},"핑크노이즈":{bg:"#FBEAF0",color:"#72243E"},
+  "카페소음":{bg:"#FAEEDA",color:"#633806"},"지브리":{bg:"#E6F1FB",color:"#0C447C"},
+  "피아노":{bg:"#E6F1FB",color:"#0C447C"},"binaural":{bg:"#F1EFE8",color:"#444441"},
+  "클래식":{bg:"#E6F1FB",color:"#0C447C"},"게임OST":{bg:"#EAF3DE",color:"#27500A"},
+  "K-POP":{bg:"#FBEAF0",color:"#72243E"},"가사있음":{bg:"#FBEAF0",color:"#72243E"},
+  "애니OST":{bg:"#FBEAF0",color:"#72243E"},"내픽":{bg:"#EEEDFE",color:"#3C3489"},
+  "인디팝":{bg:"#FBEAF0",color:"#72243E"},
+};
+
+var DAYS=["일","월","화","수","목","금","토"];
+var BAR_COLORS=["#9FE1CB","#AFA9EC","#FAC775","#F4C0D1","#B5D4F4","#C0DD97","#F5C4B3"];
+
+var timerInterval=null,startTime=null,elapsed=0,sessions=[],currentTrackIdx=-1,usedToday=[];
+var sessionStartTime=null;
+var allRemoteRows=[];
+
+function todayKey(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+function getS(k,fb){try{var v=localStorage.getItem(k);return v!==null?JSON.parse(v):fb;}catch(e){return fb;}}
+function setS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+function fmtTime(d){
+  var h=d.getHours(),m=d.getMinutes();
+  var ampm=h<12?"오전":"오후";
+  h=h%12||12;
+  return ampm+" "+h+":"+pad(m);
+}
+
+function allTracks(){
+  var custom=getS("custom_tracks",[]);
+  var extras=custom.map(function(c){return{title:c.title,desc:"내가 추가한 트랙",url:c.url,tags:["내픽"]};});
+  return BUILTIN.concat(extras);
+}
+
+function getRandomTrack(){
+  var all=allTracks();
+  if(usedToday.length>=all.length) usedToday=[];
+  var available=[];
+  for(var i=0;i<all.length;i++){if(usedToday.indexOf(i)<0)available.push(i);}
+  var idx=available[Math.floor(Math.random()*available.length)];
+  usedToday.push(idx);
+  return idx;
+}
+
+function pad(n){return n<10?"0"+n:String(n);}
+function fmtS(s){return pad(Math.floor(s/3600))+":"+pad(Math.floor((s%3600)/60))+":"+pad(s%60);}
+function fmtM(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60);if(h>0)return h+"시간 "+m+"분";if(m>0)return m+"분 "+(s%60)+"초";return s+"초";}
+
+function updateDisplay(){
+  document.getElementById("timer").textContent=fmtS(elapsed+Math.floor((Date.now()-startTime)/1000));
+}
+
+function revealTrack(idx){
+  var all=allTracks(),t=all[idx];
+  document.getElementById("hidden-state").style.display="none";
+  document.getElementById("revealed-state").style.display="block";
+  document.getElementById("music-title").textContent=t.title;
+  document.getElementById("music-desc").textContent=t.desc;
+  document.getElementById("music-link").href=t.url;
+  var html="";
+  for(var i=0;i<t.tags.length;i++){
+    var tag=t.tags[i],c=tagColors[tag]||{bg:"#F1EFE8",color:"#444441"};
+    html+='<span class="tag" style="background:'+c.bg+';color:'+c.color+'">'+tag+'</span>';
+  }
+  document.getElementById("tags").innerHTML=html;
+}
+
+function startTimer(){
+  if(timerInterval)return;
+  sessionStartTime=new Date();
+  startTime=Date.now();
+  timerInterval=setInterval(updateDisplay,1000);
+  document.getElementById("timer").classList.add("running");
+  document.getElementById("btn-start").style.display="none";
+  document.getElementById("btn-stop").style.display="inline-flex";
+  currentTrackIdx=getRandomTrack();
+  revealTrack(currentTrackIdx);
+  try{window.open(allTracks()[currentTrackIdx].url,"_blank");}catch(e){}
+}
+
+function stopTimer(){
+  if(!timerInterval)return;
+  clearInterval(timerInterval);timerInterval=null;
+  var endTime=new Date();
+  var sec=Math.floor((Date.now()-startTime)/1000);
+  elapsed+=sec;
+  var all=allTracks();
+  var session={
+    sec:sec,
+    title:all[currentTrackIdx].title,
+    startTime:fmtTime(sessionStartTime),
+    endTime:fmtTime(endTime)
+  };
+  sessions.push(session);
+  startTime=null;
+  document.getElementById("timer").classList.remove("running");
+  document.getElementById("timer").textContent=fmtS(elapsed);
+  document.getElementById("btn-stop").style.display="none";
+  document.getElementById("btn-start").style.display="inline-flex";
+  document.getElementById("btn-start").textContent="▶ 다시 시작";
+  document.getElementById("hidden-state").style.display="flex";
+  document.getElementById("revealed-state").style.display="none";
+
+  saveToSheet(session);
+  saveTodayLocal();
+  renderSessions();
+  renderMemoSection();
+  renderWeekly();
+  renderComment();
+}
+
+function saveToSheet(session){
+  setSyncStatus("저장 중...");
+  var now=new Date();
+  var dateStr=now.getFullYear()+"."+(now.getMonth()+1)+"."+now.getDate();
+  var payload={
+    type:"session",
+    date:dateStr,
+    startTime:session.startTime,
+    endTime:session.endTime,
+    sec:session.sec,
+    title:session.title
+  };
+  fetch(GAS_URL,{method:"POST",body:JSON.stringify(payload)})
+    .then(function(r){return r.json();})
+    .then(function(d){setSyncStatus(d.ok?"✓ 구글 시트에 저장됨":"저장 실패");setTimeout(function(){setSyncStatus("");},3000);})
+    .catch(function(){setSyncStatus("저장 실패 (오프라인?)");setTimeout(function(){setSyncStatus("");},3000);});
+}
+
+function saveMemoToSheet(memo){
+  var now=new Date();
+  var dateStr=now.getFullYear()+"."+(now.getMonth()+1)+"."+now.getDate();
+  fetch(GAS_URL,{method:"POST",body:JSON.stringify({type:"memo",date:dateStr,memo:memo})})
+    .catch(function(){});
+}
+
+function setSyncStatus(msg){
+  document.getElementById("sync-status").textContent=msg;
+}
+
+function saveTodayLocal(){
+  var k="day_"+todayKey();
+  setS(k,{total:elapsed,sessions:sessions,memo:getS(k,{memo:""}).memo});
+}
+
+function renderSessions(){
+  var wrap=document.getElementById("sessions-wrap");
+  wrap.style.display=sessions.length?"block":"none";
+  var html="";
+  for(var i=0;i<sessions.length;i++){
+    var s=sessions[i];
+    html+='<div class="session-item">';
+    html+='<div class="session-row"><span style="color:var(--text-sub)">'+(i+1)+'번째 집중</span><strong>'+fmtM(s.sec)+'</strong></div>';
+    html+='<div class="session-time-range">'+s.startTime+' → '+s.endTime+'</div>';
+    html+='<div class="session-music">🎵 '+s.title+'</div>';
+    html+='</div>';
+  }
+  document.getElementById("session-list").innerHTML=html;
+  document.getElementById("total-time").textContent=fmtM(elapsed);
+}
+
+function renderComment(){
+  var area=document.getElementById("comment-area");
+  if(sessions.length===0){area.innerHTML="";return;}
+
+  // 오늘 총 시간
+  var todayMin=Math.round(elapsed/60);
+
+  // 오늘 첫 시작 시간
+  var firstStart=sessions[0].startTime;
+
+  // 어제 데이터
+  var yd=new Date();yd.setDate(yd.getDate()-1);
+  var ydKey="day_"+yd.getFullYear()+"-"+(yd.getMonth()+1)+"-"+yd.getDate();
+  var ydData=getS(ydKey,{total:0});
+  var ydMin=Math.round(ydData.total/60);
+
+  var comments=[];
+
+  if(todayMin>=120) comments.push("오늘 "+todayMin+"분이나 집중했어요! 정말 대단해요 🔥");
+  else if(todayMin>=60) comments.push("오늘 "+todayMin+"분 집중 완료! 꾸준히 쌓이고 있어요 💪");
+  else if(todayMin>0) comments.push("오늘 "+todayMin+"분 집중했어요. 시작한 것만으로도 충분해요 ✨");
+
+  if(ydMin>0 && todayMin>ydMin) comments.push("어제보다 "+(todayMin-ydMin)+"분 더 했어요! 성장하고 있어요 📈");
+
+  var h=sessionStartTime?sessionStartTime.getHours():25;
+  if(h<9) comments.push("아침 일찍 시작했네요! 하루를 잘 열었어요 ☀️");
+  else if(h<12) comments.push("오전에 시작한 건 정말 잘한 선택이에요 👍");
+
+  if(sessions.length>=3) comments.push("오늘 "+sessions.length+"번이나 집중 세션을 했어요! 대단한 집중력이에요 🎯");
+
+  if(comments.length===0) return;
+  area.innerHTML='<div class="comment-box">'+comments.join("<br>")+'</div>';
+}
+
+function renderMemoSection(){
+  document.getElementById("memo-section").style.display="block";
+  var data=getS("day_"+todayKey(),{memo:""});
+  if(data.memo){
+    document.getElementById("memo-edit").style.display="none";
+    document.getElementById("memo-view").style.display="block";
+    document.getElementById("memo-view").innerHTML='<div class="saved-memo"><span>'+data.memo+'</span><button class="btn-small" onclick="editMemo()">✏ 수정</button></div>';
+  } else {
+    document.getElementById("memo-edit").style.display="block";
+    document.getElementById("memo-view").style.display="none";
+  }
+}
+
+function saveMemo(){
+  var val=document.getElementById("memo-input").value.trim();
+  if(!val)return;
+  var k="day_"+todayKey();
+  var d=getS(k,{total:0,sessions:[],memo:""});
+  d.memo=val;setS(k,d);
+  saveMemoToSheet(val);
+  renderMemoSection();
+}
+
+function editMemo(){
+  document.getElementById("memo-input").value=getS("day_"+todayKey(),{memo:""}).memo;
+  document.getElementById("memo-view").style.display="none";
+  document.getElementById("memo-edit").style.display="block";
+}
+
+function getWeekCols(){
+  var today=new Date(),cols=[];
+  for(var i=0;i<7;i++){
+    var d=new Date(today);d.setDate(today.getDate()-(6-i));
+    var k="day_"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+    var data=getS(k,{total:0,memo:""});
+    cols.push({
+      label:DAYS[d.getDay()],
+      val:Math.round(data.total/60),
+      memo:data.memo||"",
+      dateStr:(d.getMonth()+1)+"월 "+d.getDate()+"일",
+      isToday:i===6
+    });
+  }
+  return cols;
+}
+
+function renderWeekly(){
+  var cols=getWeekCols(),max=1;
+  for(var i=0;i<cols.length;i++){if(cols[i].val>max)max=cols[i].val;}
+  var html="";
+  for(var i=0;i<cols.length;i++){
+    var c=cols[i];
+    html+='<div class="bar-col"><div class="bar-val">'+(c.val>0?c.val:"")+'</div><div class="bar" style="height:'+(Math.round((c.val/max)*80)+4)+'px;background:'+(c.isToday?"#7F77DD":BAR_COLORS[i])+';opacity:'+(c.isToday?1:0.7)+'"></div><div class="bar-label" style="font-weight:'+(c.isToday?700:400)+'">'+c.label+'</div></div>';
+  }
+  document.getElementById("weekly-chart").innerHTML=html;
+}
+
+function renderWeeklyTab(){
+  var cols=getWeekCols(),max=1;
+  for(var i=0;i<cols.length;i++){if(cols[i].val>max)max=cols[i].val;}
+
+  // 차트
+  var html="";
+  for(var i=0;i<cols.length;i++){
+    var c=cols[i];
+    html+='<div class="bar-col"><div class="bar-val">'+(c.val>0?c.val:"")+'</div><div class="bar" style="height:'+(Math.round((c.val/max)*80)+4)+'px;background:'+(c.isToday?"#7F77DD":BAR_COLORS[i])+';opacity:'+(c.isToday?1:0.7)+'"></div><div class="bar-label" style="font-weight:'+(c.isToday?700:400)+'">'+c.label+'</div></div>';
+  }
+  document.getElementById("weekly-chart2").innerHTML=html;
+
+  // 한줄평
+  var memoHtml="";
+  var hasMemo=false;
+  for(var i=0;i<cols.length;i++){
+    if(cols[i].memo){
+      hasMemo=true;
+      memoHtml+='<div class="weekly-memo-item"><div class="weekly-memo-date">'+cols[i].dateStr+" ("+cols[i].label+")"+'</div><div class="weekly-memo-text">'+cols[i].memo+'</div></div>';
+    }
+  }
+  document.getElementById("weekly-memo-list").innerHTML=hasMemo?memoHtml:'<p class="empty-hint">아직 한줄평이 없어요. 오늘 공부 후 남겨보세요!</p>';
+
+  // 전체 세션 (로컬)
+  var sessHtml="";
+  for(var i=6;i>=0;i--){
+    var c=cols[6-i];
+    var d=new Date();d.setDate(d.getDate()-i);
+    var k="day_"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+    var data=getS(k,{sessions:[]});
+    if(data.sessions&&data.sessions.length>0){
+      sessHtml+='<div style="margin-bottom:10px"><div style="font-size:12px;color:var(--text-mute);margin-bottom:4px">'+c.dateStr+" ("+c.label+")"+(c.isToday?" · 오늘":"")+'</div>';
+      for(var j=0;j<data.sessions.length;j++){
+        var s=data.sessions[j];
+        sessHtml+='<div class="session-item"><div class="session-row"><span style="color:var(--text-sub)">'+(j+1)+'번째</span><strong>'+fmtM(s.sec)+'</strong></div>';
+        if(s.startTime) sessHtml+='<div class="session-time-range">'+s.startTime+' → '+s.endTime+'</div>';
+        sessHtml+='<div class="session-music">🎵 '+s.title+'</div></div>';
+      }
+      sessHtml+='</div>';
+    }
+  }
+  document.getElementById("weekly-sessions-list").innerHTML=sessHtml||'<p class="empty-hint">이번 주 기록이 없어요.</p>';
+}
+
+function showTab(tab){
+  document.getElementById("tab-timer").style.display=tab==="timer"?"block":"none";
+  document.getElementById("tab-weekly").style.display=tab==="weekly"?"block":"none";
+  var btns=document.querySelectorAll(".tab-btn");
+  btns[0].className="tab-btn"+(tab==="timer"?" active":"");
+  btns[1].className="tab-btn"+(tab==="weekly"?" active":"");
+  if(tab==="weekly") renderWeeklyTab();
+}
+
+function addCustom(){
+  var title=document.getElementById("custom-title").value.trim();
+  var url=document.getElementById("custom-url").value.trim();
+  if(!url)return;
+  var custom=getS("custom_tracks",[]);
+  custom.push({title:title||"내가 추가한 트랙",url:url});
+  setS("custom_tracks",custom);
+  document.getElementById("custom-title").value="";
+  document.getElementById("custom-url").value="";
+  renderCustomList();
+}
+
+function deleteCustom(idx){
+  var custom=getS("custom_tracks",[]);
+  custom.splice(idx,1);
+  setS("custom_tracks",custom);
+  renderCustomList();
+}
+
+function renderCustomList(){
+  var custom=getS("custom_tracks",[]);
+  document.getElementById("custom-count").textContent=custom.length>0?custom.length+"개 추가됨":"";
+  var list=document.getElementById("custom-list"),html="";
+  if(custom.length===0){list.innerHTML='<p class="empty-hint">아직 추가한 링크가 없어요!</p>';return;}
+  for(var i=0;i<custom.length;i++){
+    html+='<div class="custom-item"><span>🎵</span><span class="custom-item-title">'+custom[i].title+'</span><button class="custom-item-del" onclick="deleteCustom('+i+')">✕</button></div>';
+  }
+  list.innerHTML=html;
+}
+
+function resetDay(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  elapsed=0;sessions=[];startTime=null;usedToday=[];sessionStartTime=null;
+  document.getElementById("timer").textContent="00:00:00";
+  document.getElementById("timer").classList.remove("running");
+  document.getElementById("btn-start").style.display="inline-flex";
+  document.getElementById("btn-start").textContent="▶ 시작";
+  document.getElementById("btn-stop").style.display="none";
+  document.getElementById("sessions-wrap").style.display="none";
+  document.getElementById("memo-section").style.display="none";
+  document.getElementById("hidden-state").style.display="flex";
+  document.getElementById("revealed-state").style.display="none";
+  document.getElementById("comment-area").innerHTML="";
+  setS("day_"+todayKey(),{total:0,sessions:[],memo:""});
+  renderWeekly();
+}
+
+function init(){
+  var now=new Date();
+  document.getElementById("date-label").textContent=now.getFullYear()+"년 "+(now.getMonth()+1)+"월 "+now.getDate()+"일 ("+DAYS[now.getDay()]+")";
+  var saved=getS("day_"+todayKey(),null);
+  if(saved&&saved.total>0){
+    elapsed=saved.total;sessions=saved.sessions||[];
+    document.getElementById("timer").textContent=fmtS(elapsed);
+    document.getElementById("btn-start").textContent="▶ 다시 시작";
+    renderSessions();renderMemoSection();renderComment();
+  }
+  renderWeekly();
+  renderCustomList();
+}
+init();
+</script>
+</body>
+</html>
